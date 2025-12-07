@@ -1,12 +1,11 @@
-from typing import List
-
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, SecurityScopes
+from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import database
-from app.database.models.user import User
-from app.error import UserNotFound
+from app.database.models import User
+from app.error import BadToken, InsufficientPermissions, UserNotFound
 from app.repositories import ContractRepository, OdooRepository, UserRepository
 from app.services import AuthService, CourseService, UserService
 
@@ -40,15 +39,19 @@ async def get_current_user(
     try:
         user: User = await auth_service.get_current_user(access_token=access_token)
 
-        user_permissions: List[str] = [
+        user_permissions: set[str] = {
             permission.name for permission in user.role.permissions
-        ]
+        }
 
-        for permission in security_scopes.scopes:
-            if permission not in user_permissions:
-                raise  # TODO: Crear excepcion
+        if not set(security_scopes.scopes).issubset(user_permissions):
+            raise InsufficientPermissions
 
         return user
 
-    except UserNotFound:
-        raise
+    except (
+        UserNotFound,
+        InvalidTokenError,
+        BadToken,
+        InsufficientPermissions,
+    ) as error:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(error))

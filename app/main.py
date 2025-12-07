@@ -7,9 +7,21 @@ from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 
 from app.configuration import configuration
 from app.enums import Environment
-from app.routes import auth_router, course_router, teacher_router, user_router
+from app.routes import (
+    auth_router,
+    course_router,
+    sale_router,
+    teacher_router,
+    user_router,
+)
 
-routers: List[APIRouter] = [auth_router, course_router, teacher_router, user_router]
+routers: List[APIRouter] = [
+    auth_router,
+    course_router,
+    sale_router,
+    teacher_router,
+    user_router,
+]
 
 app: FastAPI = FastAPI(
     title="Studdeo Odoo API",
@@ -19,6 +31,7 @@ app: FastAPI = FastAPI(
 app.add_middleware(
     middleware_class=CORSMiddleware,
     allow_origins=[configuration.FRONTEND_URL.encoded_string()],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

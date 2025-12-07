@@ -1,6 +1,5 @@
 # mypy: ignore-errors
 
-
 from logging.config import fileConfig
 from os import getenv
 from typing import Optional

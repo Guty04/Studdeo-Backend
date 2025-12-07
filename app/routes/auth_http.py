@@ -1,5 +1,6 @@
+import logfire
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import Response
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.configuration import configuration
@@ -17,14 +18,14 @@ auth_router: APIRouter = APIRouter(prefix="/auth", tags=["Authenticacion"])
 async def login_user(
     user_login: OAuth2PasswordRequestForm = Depends(),
     auth_service: AuthService = Depends(dependency=get_auth_service),
-) -> Response:
+) -> JSONResponse:
     try:
         token: Token = await auth_service.auth_user(
             email=user_login.username, password=user_login.password
         )
 
-        response: Response = Response(
-            status_code=status.HTTP_200_OK, content=token.model_dump_json()
+        response: JSONResponse = JSONResponse(
+            status_code=status.HTTP_200_OK, content=token.model_dump()
         )
 
         response.set_cookie(
@@ -41,7 +42,8 @@ async def login_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail=str(auth_error)
         )
 
-    except Exception:
+    except Exception as error:
+        logfire.error(f"Error: {error}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Oops... Something went wrong.",

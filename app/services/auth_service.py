@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from fastapi.security import OAuth2PasswordBearer
@@ -34,7 +34,7 @@ class AuthService:
         ):
             raise BadPassword()
 
-        user_information: UserDTO = UserDTO.model_validate(obj=user)
+        user_information: UserDTO = UserDTO(**user.__dict__)
 
         return self.create_access_token(user_data=user_information)
 
@@ -64,9 +64,14 @@ class AuthService:
     def create_access_token(
         self,
         user_data: BaseModel,
-        expires_delta: timedelta = timedelta(minutes=30),
+        expires_delta: Optional[timedelta] = None,
     ) -> Token:
-        payload: Dict[str, Any] = {"expire": expires_delta}
+        if not expires_delta:
+            expires_delta = timedelta(minutes=30)
+
+        payload: Dict[str, Any] = {
+            "expire": (datetime.now(timezone.utc) + expires_delta).isoformat()
+        }
 
         payload.update(**user_data.model_dump())
 

@@ -1,8 +1,8 @@
-from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, ForeignKey
+from sqlalchemy import UUID as SQLUUID
+from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
@@ -13,16 +13,15 @@ from .role import Role
 class User(Base):
     __tablename__: str = "user"
 
-    id: Mapped[UUID] = mapped_column(primary_key=True)
+    id: Mapped[UUID] = mapped_column(
+        SQLUUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
     name: Mapped[str] = mapped_column()
     lastname: Mapped[str] = mapped_column()
     email: Mapped[str] = mapped_column(index=True, unique=True)
     password: Mapped[str] = mapped_column()
     id_role: Mapped[int] = mapped_column(ForeignKey("role.id"))
     external_reference: Mapped[int] = mapped_column(unique=True, nullable=True)
-    latest_sync: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
-    )
 
     role: Mapped[Role] = relationship()
     contract: Mapped[List[Contract]] = relationship(

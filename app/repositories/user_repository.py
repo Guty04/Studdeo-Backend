@@ -4,8 +4,9 @@ from uuid import UUID
 
 from sqlalchemy import Result, Select, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
-from app.database.models import User
+from app.database.models import Role, User
 from app.schemas import UserCreate
 
 
@@ -48,17 +49,17 @@ class UserRepository(InterfaceUserRepository):
             raise database_error
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
-        statement: Select[Tuple[User]] = select(User).where(User.email == email)
+        statement: Select[Tuple[User]] = (
+            select(User)
+            .options(selectinload(User.role).selectinload(Role.permissions))
+            .where(User.email == email)
+        )
 
-        try:
-            result: Result[Tuple[User]] = await self.async_session.execute(
-                statement=statement
-            )
+        result: Result[Tuple[User]] = await self.async_session.execute(
+            statement=statement
+        )
 
-            return result.scalar_one_or_none()
-
-        except Exception as database_error:
-            raise database_error
+        return result.scalar_one_or_none()
 
     async def get_users(self, is_active: bool) -> Sequence[User]:
         statement: Select[Tuple[User]] = select(User).where(User.is_active == is_active)

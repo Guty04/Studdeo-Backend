@@ -1,7 +1,7 @@
 from typing import List, Set
 
 from app.repositories import OdooRepository
-from app.schemas import CourseOdoo, LessonOdoo, StudentOdoo
+from app.schemas import CourseOdoo, LessonOdoo, SaleOdoo, StudentOdoo
 
 
 class CourseService:
@@ -18,3 +18,6 @@ class CourseService:
         students_ids: Set[int] = self.repository.get_students_ids(course_id=course_id)
 
         return self.repository.get_students(students_ids=students_ids)
+
+    def get_course_sales(self, course_id: int) -> List[SaleOdoo]:
+        return self.repository.get_course_sales(course_id)
