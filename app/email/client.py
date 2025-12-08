@@ -1,9 +1,9 @@
 from email.message import EmailMessage
 from pathlib import Path
-from string import Template
 
 from aiosmtplib import send
 from aiosmtplib.errors import SMTPException
+from jinja2 import Template
 from pydantic import BaseModel
 
 from app.configuration import configuration
@@ -29,7 +29,7 @@ class EmailClient:
 
     def _create_body_message(self, template_name: str) -> Template:
         with open(f"{self.templates_directories}/{template_name}") as html:
-            content = Template(html.read())
+            content: Template = Template(html.read())
 
         return content
 
@@ -48,7 +48,7 @@ class EmailClient:
             send_to=email, subject=subject
         )
 
-        content: str = email_template.substitute(mapping=email_information.model_dump())
+        content: str = email_template.render(email_information.model_dump())
 
         email_message.add_alternative(content, subtype="html")
 

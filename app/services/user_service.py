@@ -1,7 +1,11 @@
+from datetime import datetime
 from typing import List, Optional, Sequence, Set
 from uuid import UUID
 
+from app.configuration import configuration
 from app.database.models import User
+from app.email import EmailClient
+from app.enums import TemplateHTML
 from app.error import UserAlreadyExist, UserNotFound
 from app.repositories import (
     InterfaceContractRepository,
@@ -9,7 +13,7 @@ from app.repositories import (
     OdooRepository,
 )
 from app.schemas import Contract as ContractDTO
-from app.schemas import ContractCreate, TeacherOdoo, UserCreate, UserDB
+from app.schemas import ContractCreate, TeacherOdoo, UserCreate, UserCreateEmail, UserDB
 
 from .security_service import SecurityService
 
@@ -76,16 +80,22 @@ class UserService:
 
         await self.repository.create_user(user_create=user)
 
-        # client: EmailClient = EmailClient()
+        client: EmailClient = EmailClient()
 
-        # TODO: Crear un modelo para enviar por HTML
+        actual_year = datetime.now().year
 
-        # await client.send_email(
-        #    subject="Bienvenido a Studeeo!!",
-        #    email=user_create.email,
-        #    email_information=user_create,
-        #    template_name=TemplateHTML.VERIFICATION,
-        # )
+        email_information = UserCreateEmail(
+            frontend_url=configuration.FRONTEND_URL,
+            year=actual_year,
+            **user_create.model_dump(),
+        )
+
+        await client.send_email(
+            subject="Bienvenido a Studeeo!!",
+            email=user_create.email,
+            email_information=email_information,
+            template_name=TemplateHTML.VERIFICATION,
+        )
 
     def get_external_users(
         self, teacher_ids: Optional[Set[int]] = None
