@@ -3,7 +3,6 @@ from typing import List
 import logfire
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.httpsredirect import HTTPSRedirectMiddleware
 
 from app.configuration import configuration
 from app.enums import Environment
@@ -35,9 +34,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-if configuration.environment == Environment.PRODUCTION:
-    app.add_middleware(HTTPSRedirectMiddleware)
 
 
 @app.get("/ping", tags=["Root"])
