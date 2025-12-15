@@ -13,9 +13,7 @@ from .dependencies import get_course_service, get_current_user
 course_router: APIRouter = APIRouter(prefix="/course", tags=["Course"])
 
 
-@course_router.get(
-    path="/", response_model=List[CourseOdoo], response_model_exclude={"sales"}
-)
+@course_router.get(path="/", response_model=List[CourseOdoo])
 async def route_get_courses(
     current_user: User = Security(
         dependency=get_current_user, scopes=[Permission.READ_COURSES]

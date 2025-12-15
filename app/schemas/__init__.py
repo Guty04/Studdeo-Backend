@@ -2,6 +2,7 @@ from .contract import Contract, ContractCreate
 from .email import UserBaseEmail
 from .odoo import (
     CourseOdoo,
+    CourseWithSales,
     DetailSaleOdoo,
     LessonOdoo,
     SaleOdoo,
@@ -16,6 +17,7 @@ __all__: list[str] = [
     "Contract",
     "ContractCreate",
     "CourseOdoo",
+    "CourseWithSales",
     "DetailSaleOdoo",
     "LessonOdoo",
     "RoleDB",

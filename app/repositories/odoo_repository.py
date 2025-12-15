@@ -21,8 +21,8 @@ class OdooRepository:
     db: str = configuration.ODOO_DB
     user: str = configuration.ODOO_USER
     api_key: str = configuration.ODOO_API_KEY.get_secret_value()
-    common = ServerProxy(uri=f"{url}/xmlrpc/2/common", allow_none=True)
-    models = ServerProxy(uri=f"{url}/xmlrpc/2/object", allow_none=True)
+    common: ServerProxy = ServerProxy(uri=f"{url}/xmlrpc/2/common", allow_none=True)
+    models: ServerProxy = ServerProxy(uri=f"{url}/xmlrpc/2/object", allow_none=True)
     uid: str = cast(str, common.authenticate(db, user, api_key, {}))
 
     def execute_kw(

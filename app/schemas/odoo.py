@@ -36,7 +36,7 @@ class SaleOdoo(BaseModel):
     buyer: StudentOdoo
 
     @computed_field
-    def calculate_subtotal(self) -> float:
+    def calculated_subtotal(self) -> float:
         subtotal: float = 0
 
         for detail in self.details_sale:
@@ -50,14 +50,16 @@ class CourseOdoo(BaseModel):
     name: str
     description: str
     product_id: Optional[int] = None
+
+
+class CourseWithSales(CourseOdoo):
     sales: List[SaleOdoo] = Field(default_factory=list[SaleOdoo])
 
-    @property
     @computed_field
     def calculated_total(self) -> float:
         total: float = 0
 
         for subtotal in self.sales:
-            total += subtotal.calculate_subtotal()
+            total += subtotal.calculated_subtotal()
 
         return total
