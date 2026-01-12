@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer, SecurityScopes
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import database
+from app.database.connection import database
 from app.database.models import User
 from app.error import BadToken, InsufficientPermissions, UserNotFound
 from app.repositories import (
