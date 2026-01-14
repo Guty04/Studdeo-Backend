@@ -120,7 +120,7 @@ class AuthService:
         )
 
         url: HttpUrl = HttpUrl(
-            configuration.FRONTEND_URL.encoded_string() + f"/token={hashed_token}"
+            url=configuration.FRONTEND_URL.encoded_string() + f"/token={hashed_token}"
         )
 
         year: int = datetime.now().year
@@ -131,7 +131,7 @@ class AuthService:
 
         client: EmailClient = EmailClient()
 
-        client.send_email(
+        await client.send_email(
             subject="Restore passsword",
             email=user.email,
             email_information=email_information,

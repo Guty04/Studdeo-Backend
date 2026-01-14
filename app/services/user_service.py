@@ -88,7 +88,7 @@ class UserService:
             **user_create.model_dump(),
         )
 
-        client.send_email(
+        await client.send_email(
             subject="Bienvenido a Studeeo!!",
             email=user_create.email,
             email_information=email_information,
