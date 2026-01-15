@@ -62,7 +62,7 @@ async def route_get_lessons(
 
 @course_router.get(path="/{id_course}/students", response_model=List[StudentOdoo])
 async def route_get_students(
-    course_id: int,
+    id_course: int,
     course_service: CourseService = Depends(dependency=get_course_service),
     current_user: User = Security(
         dependency=get_current_user, scopes=[Permission.READ_STUDENTS]
@@ -80,10 +80,10 @@ async def route_get_students(
             )
         }
 
-        if course_id not in user_courses:
+        if id_course not in user_courses:
             raise CourseNotFound()
 
-        return course_service.get_students(course_id=course_id)
+        return course_service.get_students(course_id=id_course)
 
     except CourseNotFound as course_error:
         raise HTTPException(
