@@ -168,10 +168,7 @@ class OdooRepository:
         details_sale_fields: List[str] = [
             "order_id",
             "price_total",
-            "price_unit",
-            "price_subtotal",
             "product_uom_qty",
-            "discount",
         ]
         arguments: List[Union[Tuple[str, str, Any], str, int]] = [
             ("product_id", "=", product_id),
@@ -189,7 +186,6 @@ class OdooRepository:
 
         order_mapped: Dict[int, List[DetailSaleOdoo]] = {}
         for detail in details_sale:
-            print(detail)
             order_id: int = detail["order_id"][0]
             detail_sale_odoo: DetailSaleOdoo = DetailSaleOdoo(
                 external_reference=order_id,
@@ -206,8 +202,6 @@ class OdooRepository:
             "date_order",
             "partner_id",
             "amount_total",
-            "amount_untaxed",
-            "applied_coupon_ids",
             "reward_amount",
         ]
         sales_information: List[Dict[str, Any]] = self.execute_kw(
@@ -227,13 +221,14 @@ class OdooRepository:
 
         sales: List[SaleOdoo] = []
         for sale in sales_information:
-            print(sale)
             sales.append(
                 SaleOdoo(
                     external_reference=sale["id"],
                     date=sale["date_order"],
                     details_sale=order_mapped[sale["id"]],
                     buyer=student_map[sale["partner_id"][0]],
+                    discount=sale["reward_amount"],
+                    total=sale["amount_total"],
                 )
             )
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field, computed_field
+from pydantic import BaseModel, EmailStr, Field
 
 
 class StudentOdoo(BaseModel):
@@ -34,14 +34,8 @@ class SaleOdoo(BaseModel):
     date: datetime
     details_sale: List[DetailSaleOdoo]
     buyer: StudentOdoo
-
-    def calculated_subtotal(self) -> float:
-        subtotal: float = 0
-
-        for detail in self.details_sale:
-            subtotal += detail.price * detail.quantity
-
-        return subtotal
+    discount: float
+    total: float
 
 
 class CourseOdoo(BaseModel):
@@ -55,12 +49,3 @@ class CourseOdoo(BaseModel):
 
 class CourseWithSales(CourseOdoo):
     sales: List[SaleOdoo] = Field(default_factory=list[SaleOdoo])
-
-    @computed_field
-    def calculated_total(self) -> float:
-        total: float = 0
-
-        for subtotal in self.sales:
-            total += subtotal.calculated_subtotal()
-
-        return total
