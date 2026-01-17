@@ -54,4 +54,3 @@ for route in routers:
 
 logfire.configure()
 logfire.instrument_fastapi(app=app)
-#
