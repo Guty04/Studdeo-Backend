@@ -14,7 +14,13 @@ from app.repositories import (
     OdooRepository,
 )
 from app.schemas import Contract as ContractDTO
-from app.schemas import ContractCreate, TeacherOdoo, UserBaseEmail, UserCreate, UserDB
+from app.schemas import (
+    ContractCreate,
+    TeacherOdoo,
+    UserCreate,
+    UserCreatedEmail,
+    UserDB,
+)
 
 from .security_service import SecurityService
 
@@ -53,15 +59,15 @@ class UserService:
             raise UserNotFound()
 
         contract_create = ContractCreate(
-            **contract.model_dump(),
             referer_id_user=referer_id_user,
             referred_id_user=referred_id_user,
+            **contract.model_dump(),
         )
 
         await self.contract_repository.create_contract(contract_create=contract_create)
 
-    async def create_user(self, user_create: UserCreate) -> None:
-        if await self.repository.get_user_by_email(email=user_create.email):
+    async def create_user(self, user_create: UserCreate) -> User:
+        if await self.repository.get_user_by_email(email=user_create.email) is not None:
             raise UserAlreadyExist()
 
         hashed_password: str = self.security_service.hash_password(
@@ -73,16 +79,17 @@ class UserService:
             email=user_create.email,
             name=user_create.name,
             lastname=user_create.lastname,
-            id_role=user_create.id_role,
+            role=user_create.role,
+            contract=user_create.contract,
         )
 
-        await self.repository.create_user(user_create=user)
+        user_created: User = await self.repository.create_user(user_create=user)
 
         client: EmailClient = EmailClient()
 
         actual_year: int = datetime.now().year
 
-        email_information = UserBaseEmail(
+        email_information = UserCreatedEmail(
             frontend_url=configuration.FRONTEND_URL,
             year=actual_year,
             **user_create.model_dump(),
@@ -95,15 +102,26 @@ class UserService:
             template_name=TemplateHTML.VERIFICATION,
         )
 
-    def get_external_users(
-        self, teacher_ids: Optional[Set[int]] = None
-    ) -> List[TeacherOdoo]:
-        if not teacher_ids:
-            teacher_ids = self.external_repository.get_teachers_ids()
+        return user_created
 
-        return self.external_repository.get_teachers(teachers_ids=teacher_ids)
+    def get_external_users(self, teacher_ids: Set[int]) -> List[TeacherOdoo]:
+        all_teachers: Set[int] = self.external_repository.get_teachers_ids()
+
+        teachers_not_mapped: Set[int] = all_teachers.difference(teacher_ids)
+
+        return self.external_repository.get_teachers(teachers_ids=teachers_not_mapped)
 
     async def get_users(self, is_active: bool) -> List[UserDB]:
         users: Sequence[User] = await self.repository.get_users(is_active=is_active)
 
-        return [UserDB(**user.__dict__) for user in users]
+        return [
+            UserDB(
+                id=user.id,
+                lastname=user.lastname,
+                name=user.name,
+                email=user.email,
+                role=user.role.name,
+                external_reference=user.external_reference,
+            )
+            for user in users
+        ]

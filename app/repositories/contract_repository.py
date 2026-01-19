@@ -17,7 +17,7 @@ class ContractRepository(InterfaceContractRepository):
     async_session: AsyncSession
 
     async def create_contract(self, contract_create: ContractCreate) -> None:
-        contract: Contract = Contract(**contract_create.model_dump())
+        contract: Contract = Contract(is_active=True, **contract_create.model_dump())
 
         self.async_session.add(contract)
 
@@ -27,4 +27,5 @@ class ContractRepository(InterfaceContractRepository):
             await self.async_session.refresh(contract)
 
         except Exception as database_error:
+            await self.async_session.rollback()
             raise database_error

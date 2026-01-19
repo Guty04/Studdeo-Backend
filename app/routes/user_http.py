@@ -1,13 +1,20 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
+import logfire
 from fastapi import APIRouter, Depends, HTTPException, Security, status
 from fastapi.responses import JSONResponse
 
 from app.database.models import User
 from app.enums import Permission
-from app.error import UserAlreadyExist, UserNotFound
-from app.schemas import Contract, UserContract, UserCreate, UserDB
+from app.error import TeacherNotFound, UserAlreadyExist, UserNotFound
+from app.schemas import (
+    Contract,
+    TeacherOdoo,
+    UserContract,
+    UserCreate,
+    UserDB,
+)
 from app.services import UserService
 
 from .dependencies import get_current_user, get_user_service
@@ -23,7 +30,9 @@ async def route_get_users(
         dependency=get_current_user, scopes=[Permission.READ_USERS]
     ),
 ) -> List[UserDB]:
-    return await user_service.get_users(is_active=is_active)
+    list_users: List[UserDB] = await user_service.get_users(is_active=is_active)
+
+    return [user for user in list_users if user.id != current_user.id]
 
 
 @user_router.post(path="/")
@@ -35,16 +44,45 @@ async def route_create_user(
     ),
 ) -> JSONResponse:
     try:
-        await user_service.create_user(user_create=user_create)
+        odoo_teacher: Optional[TeacherOdoo] = (
+            user_service.external_repository.get_teacher_by_email(user_create.email)
+        )
+
+        if not odoo_teacher:
+            raise TeacherNotFound()
+
+        user_created: User = await user_service.create_user(user_create=user_create)
+
+        user_created.set_external_refence(
+            external_reference=odoo_teacher.external_reference
+        )
+
+        await user_service.create_contract(
+            referer_id_user=current_user.id,
+            referred_id_user=user_created.id,
+            contract=user_create.contract,
+        )
 
         return JSONResponse(
             status_code=status.HTTP_201_CREATED,
             content={"message": "User successfully created"},
         )
 
+    except TeacherNotFound as odoo_error:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=str(odoo_error)
+        )
+
     except UserAlreadyExist as user_error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT, detail=str(user_error)
+        )
+
+    except Exception as error:
+        logfire.error(str(error))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Ooops...algo salio mal",
         )
 
 
@@ -58,10 +96,7 @@ async def route_update_user(
     user_service: UserService = Depends(dependency=get_user_service),
 ) -> JSONResponse:
     try:
-        await user_service.activate_user(
-            id_user=id_user, external_reference=user_information.external_reference
-        )
-
+        # TODO: revisar de actualizar el contrato
         await user_service.create_contract(
             referer_id_user=current_user.id,
             referred_id_user=id_user,

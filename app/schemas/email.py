@@ -6,3 +6,8 @@ class UserBaseEmail(BaseModel):
     lastname: str
     frontend_url: HttpUrl
     year: int
+
+
+class UserCreatedEmail(UserBaseEmail):
+    email: str
+    password: str

@@ -8,8 +8,7 @@ from jwt.exceptions import InvalidTokenError
 from pydantic import BaseModel, HttpUrl
 
 from app.configuration import configuration
-from app.database.models import User
-from app.database.models.password_reset_token import PasswordResetToken
+from app.database.models import PasswordResetToken, User
 from app.email import EmailClient
 from app.enums import TemplateHTML
 from app.error import BadPassword, BadToken, UserNotFound
@@ -46,7 +45,7 @@ class AuthService:
             name=user.name,
             email=user.email,
             lastname=user.lastname,
-            role_name=user.role.name,
+            role=user.role.name,
         )
 
         return self.create_access_token(user_data=user_information)
@@ -86,7 +85,7 @@ class AuthService:
             "expire": (datetime.now(timezone.utc) + expires_delta).isoformat()
         }
 
-        payload.update(**user_data.model_dump())
+        payload.update(user_data.model_dump())
 
         encoded_jwt: str = encode(
             payload=payload,
@@ -99,28 +98,25 @@ class AuthService:
     async def create_email_restore_password(self, email: str) -> None:
         user: Optional[User] = await self.repository.get_user_by_email(email=email)
 
-        if not user:
+        if not user or not user.is_active:
             return None
 
         user_information: UserDTO = UserDTO(
             name=user.name,
             email=user.email,
             lastname=user.lastname,
-            role_name=user.role.name,
+            role=user.role.name,
         )
 
-        token: Token = self.create_access_token(**user_information.model_dump())
-
-        hashed_token: str = self.security_service.hash_password(
-            password=token.access_token
-        )
+        token: Token = self.create_access_token(user_data=user_information)
 
         await self.password_reset_token_repository.create_password_reset_token(
-            token=hashed_token, id_user=user.id
+            token=token.access_token, id_user=user.id
         )
 
         url: HttpUrl = HttpUrl(
-            url=configuration.FRONTEND_URL.encoded_string() + f"/token={hashed_token}"
+            url=configuration.FRONTEND_URL.encoded_string()
+            + f"/token={token.access_token}"
         )
 
         year: int = datetime.now().year
@@ -160,8 +156,8 @@ class AuthService:
         if not user:
             raise
 
-        hashed_passqord: str = self.security_service.hash_password(new_password)
+        hashed_password: str = self.security_service.hash_password(new_password)
 
-        user.password = hashed_passqord
+        user.password = hashed_password
 
         await self.repository.update_user(user=user)

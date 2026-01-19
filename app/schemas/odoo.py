@@ -1,19 +1,20 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 
 class StudentOdoo(BaseModel):
     external_reference: int
     name: str
-    emai: Optional[EmailStr] = None
+    email: Optional[EmailStr] = None
     phone: Optional[str] = None
 
 
 class TeacherOdoo(BaseModel):
     external_reference: int
     name: str
+    lastname: str
     email: EmailStr
     active: bool
 
@@ -45,6 +46,7 @@ class CourseOdoo(BaseModel):
     product_id: Optional[int] = None
     user_id: int
     create_date: datetime
+    image: HttpUrl
 
 
 class CourseWithSales(CourseOdoo):

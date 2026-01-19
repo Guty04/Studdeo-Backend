@@ -1,8 +1,5 @@
 from app.repositories import OdooRepository
 
-odoo = OdooRepository()
+odoo = OdooRepository().get_courses(teacher_id=8)
 
-
-sales = odoo.get_course_sales(7)
-
-print(sales)
+print(odoo)

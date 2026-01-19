@@ -1,5 +1,5 @@
 from .contract import Contract, ContractCreate
-from .email import UserBaseEmail
+from .email import UserBaseEmail, UserCreatedEmail
 from .odoo import (
     CourseOdoo,
     CourseWithSales,
@@ -30,4 +30,5 @@ __all__: list[str] = [
     "UserCreate",
     "UserBaseEmail",
     "UserContract",
+    "UserCreatedEmail",
 ]

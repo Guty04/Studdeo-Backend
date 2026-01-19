@@ -31,6 +31,10 @@ async def router_get_courses(
     return course_service.get_all_courses(date_from=date_from)
 
 
+@administrator_router.get("/sales")
+async def router_get_sales(): ...
+
+
 @administrator_router.get(
     path="/course/{course_id}/lessons", response_model=List[LessonOdoo]
 )

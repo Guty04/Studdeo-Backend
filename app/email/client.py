@@ -50,7 +50,7 @@ class EmailClient:
 
         email_message.add_alternative(content, subtype="html")
 
-        _, response_code = await send(
+        errors, response_code = await send(
             email_message,
             hostname=configuration.EMAIL_HOST,
             port=configuration.EMAIL_PORT,
@@ -58,6 +58,5 @@ class EmailClient:
             password=self.email_password,
             use_tls=True,
         )
-
-        if response_code != "Message received":
+        if errors or not response_code.startswith("2"):
             raise SMTPException("Failed to send email")

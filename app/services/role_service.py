@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Sequence
 
+from app.database.models import Role
 from app.repositories import RoleRepository
 from app.schemas import RoleDB
 
@@ -10,6 +11,6 @@ class RoleService:
     repository: RoleRepository
 
     async def get_roles(self) -> List[RoleDB]:
-        return [
-            RoleDB.model_validate(role) for role in await self.repository.get_roles()
-        ]
+        roles_db: Sequence[Role] = await self.repository.get_roles()
+
+        return [RoleDB.model_validate(role) for role in roles_db]

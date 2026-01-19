@@ -40,7 +40,7 @@ class OdooRepository:
         model: str,
         method: str,
         args: List[List[Union[str, int, Tuple[str, str, Any]]]] = [],
-        kwargs: Optional[dict[str, Union[List[str], str]]] = None,
+        kwargs: Optional[dict[str, Union[List[str], str, int]]] = None,
     ) -> List[Dict[str, Any]]:
         uid: int = self.get_uid()
 
@@ -80,6 +80,7 @@ class OdooRepository:
             "description",
             "product_id",
             "user_id",
+            "website_default_background_image_url",
             "create_date",
         ]
 
@@ -107,6 +108,8 @@ class OdooRepository:
                 product_id=course["product_id"][0] if course["product_id"] else None,
                 user_id=course["user_id"][0],
                 create_date=course["create_date"],
+                image=configuration.ODOO_URL.encoded_string()
+                + course["website_default_background_image_url"],
             )
             for course in courses
         ]
@@ -117,6 +120,7 @@ class OdooRepository:
             "name",
             "description",
             "product_id",
+            "website_default_background_image_url",
             "create_date",
         ]
         arguments: List[Union[Tuple[str, str, Any], str, int]] = [
@@ -142,6 +146,8 @@ class OdooRepository:
                 product_id=course["product_id"][0] if course["product_id"] else None,
                 user_id=teacher_id,
                 create_date=course["create_date"],
+                image=configuration.ODOO_URL.encoded_string()
+                + course["website_default_background_image_url"],
             )
             for course in courses
         ]
@@ -164,7 +170,7 @@ class OdooRepository:
             LessonOdoo(external_reference=lesson["id"], **lesson) for lesson in lessons
         ]
 
-    def get_course_sales(self, product_id: int) -> List[SaleOdoo]:
+    def get_course_sales(self, product_id: int, discount: float) -> List[SaleOdoo]:
         details_sale_fields: List[str] = [
             "order_id",
             "price_total",
@@ -206,9 +212,9 @@ class OdooRepository:
         ]
         sales_information: List[Dict[str, Any]] = self.execute_kw(
             model="sale.order",
-            method="read",
-            args=[list(order_mapped.keys())],
-            kwargs={"fields": sale_fields},
+            method="search_read",
+            args=[[("id", "in", list(order_mapped.keys()))]],
+            kwargs={"fields": sale_fields, "order": "date_order asc"},
         )
 
         student_set: Set[int] = {sale["partner_id"][0] for sale in sales_information}
@@ -228,7 +234,7 @@ class OdooRepository:
                     details_sale=order_mapped[sale["id"]],
                     buyer=student_map[sale["partner_id"][0]],
                     discount=sale["reward_amount"],
-                    total=sale["amount_total"],
+                    total=sale["amount_total"] * discount,
                 )
             )
 
@@ -256,7 +262,7 @@ class OdooRepository:
         return students_ids
 
     def get_students(self, students_ids: Set[int]) -> List[StudentOdoo]:
-        student_fields: List[str] = ["id", "name", "email", "phone"]
+        student_fields: List[str] = ["id", "name", "email"]
 
         students: List[Dict[str, Any]] = self.execute_kw(
             model="res.partner",
@@ -268,8 +274,7 @@ class OdooRepository:
         return [
             StudentOdoo(
                 external_reference=student["id"],
-                phone=student["phone"] if student["phone"] else None,
-                emai=student["email"] if "@" in student["email"] else None,
+                email=student["email"] if "@" in student["email"] else None,
                 name=student["name"],
             )
             for student in students
@@ -286,7 +291,6 @@ class OdooRepository:
 
     def get_teachers(self, teachers_ids: Set[int]) -> List[TeacherOdoo]:
         teacher_fields: List[str] = ["id", "name", "email", "active"]
-        # Agregar parent_name que seria apellido
         teachers: List[Dict[str, Any]] = self.execute_kw(
             model="res.users",
             method="read",
@@ -294,7 +298,52 @@ class OdooRepository:
             kwargs={"fields": teacher_fields},
         )
 
-        return [
-            TeacherOdoo(external_reference=teacher["id"], **teacher)
-            for teacher in teachers
-        ]
+        list_teachers: List[TeacherOdoo] = []
+
+        for teacher in teachers:
+            name: str = teacher["name"]
+            lastname: str = ""
+
+            if len(teacher["name"].split()) != 1:
+                name = teacher["name"].split()[0]
+                lastname = teacher["name"].split()[1]
+
+            list_teachers.append(
+                TeacherOdoo(
+                    external_reference=teacher["id"],
+                    name=name,
+                    lastname=lastname,
+                    active=teacher["active"],
+                    email=teacher["email"],
+                )
+            )
+
+        return list_teachers
+
+    def get_teacher_by_email(self, email: str) -> Optional[TeacherOdoo]:
+        teacher_fields: List[str] = ["id", "name", "email", "active"]
+
+        teacher: List[Dict[str, Any]] = self.execute_kw(
+            model="res.users",
+            method="search_read",
+            args=[[("email", "=", email)]],
+            kwargs={"fields": teacher_fields, "limit": 1},
+        )
+
+        if not teacher:
+            return None
+
+        name: str = teacher[0]["name"]
+        lastname: str = ""
+
+        if len(name.split()) != 1:
+            name = name.split()[0]
+            lastname = name.split()[1]
+
+        return TeacherOdoo(
+            external_reference=teacher[0]["id"],
+            name=name,
+            lastname=lastname,
+            email=teacher[0]["email"],
+            active=teacher[0]["active"],
+        )

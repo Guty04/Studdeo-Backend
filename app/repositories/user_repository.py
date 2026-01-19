@@ -13,7 +13,7 @@ from app.schemas import UserCreate
 
 class InterfaceUserRepository(ABC):
     @abstractmethod
-    async def create_user(self, user_create: UserCreate) -> None: ...
+    async def create_user(self, user_create: UserCreate) -> User: ...
 
     @abstractmethod
     async def get_user_by_email(self, email: str) -> Optional[User]: ...
@@ -32,33 +32,38 @@ class InterfaceUserRepository(ABC):
 class UserRepository(InterfaceUserRepository):
     async_session: AsyncSession
 
-    async def create_user(self, user_create: UserCreate) -> None:
+    async def create_user(self, user_create: UserCreate) -> User:
         statement: Select[Tuple[Role]] = select(Role).where(
-            Role.id == user_create.id_role
+            Role.name == user_create.role
         )
 
         result: Result[Tuple[Role]] = await self.async_session.execute(
             statement=statement
         )
 
-        result.scalar_one()
+        role: Role = result.scalar_one()
 
-        user: User = User(**user_create.model_dump())
+        user: User = User(
+            name=user_create.name,
+            lastname=user_create.lastname,
+            password=user_create.password,
+            email=user_create.email,
+            id_role=role.id,
+            is_active=True,
+        )
 
         try:
             self.async_session.add(user)
             await self.async_session.commit()
+
+            return user
 
         except Exception as database_error:
             await self.async_session.rollback()
             raise database_error
 
     async def get_user(self, id_user: UUID) -> Optional[User]:
-        try:
-            return await self.async_session.get(User, id_user)
-
-        except Exception as database_error:
-            raise database_error
+        return await self.async_session.get(User, id_user)
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
         statement: Select[Tuple[User]] = (
@@ -77,7 +82,11 @@ class UserRepository(InterfaceUserRepository):
         return result.scalar_one_or_none()
 
     async def get_users(self, is_active: bool) -> Sequence[User]:
-        statement: Select[Tuple[User]] = select(User).where(User.is_active == is_active)
+        statement: Select[Tuple[User]] = (
+            select(User)
+            .where(User.is_active == is_active)
+            .options(selectinload(User.role))
+        )
 
         result: Result[Tuple[User]] = await self.async_session.execute(
             statement=statement
