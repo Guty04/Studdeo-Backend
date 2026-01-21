@@ -56,7 +56,9 @@ class EmailClient:
             port=configuration.EMAIL_PORT,
             username=self.email,
             password=self.email_password,
-            use_tls=True,
+            use_tls=False,
+            start_tls=True,
+            timeout=15
         )
         if errors or not response_code.startswith("2"):
             raise SMTPException("Failed to send email")
