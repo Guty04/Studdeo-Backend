@@ -16,3 +16,8 @@ class InsufficientPermissions(Exception):
 class InvalidToken(Exception):
     def __init__(self, message: str = "This token is invalid.") -> None:
         super().__init__(message)
+
+
+class PasswordsDontMatch(Exception):
+    def __init__(self, message: str = "This token is invalid.") -> None:
+        super().__init__(message)

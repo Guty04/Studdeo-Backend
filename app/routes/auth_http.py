@@ -6,8 +6,8 @@ from pydantic import EmailStr
 
 from app.configuration import configuration
 from app.enums import Environment
-from app.error import BadPassword, UserNotFound
-from app.schemas import Token
+from app.error import BadPassword, PasswordsDontMatch, UserNotFound
+from app.schemas import ChangePassword, Token
 from app.services import AuthService
 
 from .dependencies import get_auth_service
@@ -72,17 +72,25 @@ async def route_restore_password(
 @auth_router.put("/restore_password/{token}")
 async def route_update_password(
     token: str,
-    new_password: str,
+    passwords: ChangePassword,
     auth_service: AuthService = Depends(get_auth_service),
 ) -> JSONResponse:
     try:
+        if passwords.password != passwords.repeat_password:
+            raise PasswordsDontMatch
+
         await auth_service.restore_password(
-            hashed_token=token, new_password=new_password
+            hashed_token=token, new_password=passwords.password
         )
 
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"message": "Contraseña actualizada con exito."},
+        )
+
+    except PasswordsDontMatch as password_errors:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(password_errors)
         )
 
     except Exception as error:

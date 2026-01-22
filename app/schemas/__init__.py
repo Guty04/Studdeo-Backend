@@ -9,6 +9,7 @@ from .odoo import (
     StudentOdoo,
     TeacherOdoo,
 )
+from .password import ChangePassword
 from .role import RoleDB
 from .token import Token
 from .user import User, UserContract, UserCreate, UserDB
@@ -31,4 +32,5 @@ __all__: list[str] = [
     "UserBaseEmail",
     "UserContract",
     "UserCreatedEmail",
+    "ChangePassword",
 ]
