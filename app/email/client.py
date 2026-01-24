@@ -30,15 +30,15 @@ class EmailClient:
         self.service = self._build_service()
 
     def _build_service(self) -> Resource:
-        creds: Credentials = Credentials.from_authorized_user_file(
+        creds: Credentials = Credentials.from_authorized_user_file(  # type:ignore
             filename=self.token_path,
             scopes=["https://www.googleapis.com/auth/gmail.send"],
         )
 
-        if creds.expired and creds.refresh_token:
-            creds.refresh(request=Request())
+        if creds.expired and creds.refresh_token:  # type:ignore
+            creds.refresh(request=Request())  # type:ignore
 
-        return build("gmail", "v1", credentials=creds)
+        return build("gmail", "v1", credentials=creds)  # type:ignore
 
     def _create_template_message(self, send_to: str, subject: str) -> EmailMessage:
         message = EmailMessage()
@@ -75,7 +75,7 @@ class EmailClient:
 
         raw_message: str = base64.urlsafe_b64encode(email_message.as_bytes()).decode()
 
-        self.service.users().messages().send(
+        self.service.users().messages().send(  # type:ignore
             userId="me",
             body={"raw": raw_message},
-        ).execute()
+        ).execute()  # type:ignore
