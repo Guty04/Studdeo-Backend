@@ -5,7 +5,14 @@ from fastapi import APIRouter, Depends, Security
 
 from app.database.models import User
 from app.enums import Permission
-from app.schemas import CourseOdoo, CourseWithSales, LessonOdoo, SaleOdoo, UserDB
+from app.schemas import (
+    CourseOdoo,
+    CourseWithSales,
+    LessonOdoo,
+    SaleOdoo,
+    StudentOdoo,
+    UserDB,
+)
 from app.services import CourseService, UserService
 
 from .dependencies import get_course_service, get_current_user, get_user_service
@@ -69,8 +76,21 @@ async def router_get_sales(
 async def route_get_lessons(
     course_id: int,
     course_service: CourseService = Depends(dependency=get_course_service),
-    current_user: User = Security(
+    _: User = Security(
         dependency=get_current_user, scopes=[Permission.READ_ALL_LESSONS]
     ),
 ) -> List[LessonOdoo]:
     return course_service.get_lessons(course_id=course_id)
+
+
+@administrator_router.get(
+    "/course/{course_id}/students", response_model=List[StudentOdoo]
+)
+async def route_get_students(
+    course_id: int,
+    course_service: CourseService = Depends(dependency=get_course_service),
+    _: User = Security(
+        dependency=get_current_user, scopes=[Permission.READ_ALL_LESSONS]
+    ),
+) -> List[StudentOdoo]:
+    return course_service.get_students(course_id=course_id)
