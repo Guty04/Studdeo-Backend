@@ -116,7 +116,7 @@ class AuthService:
 
         url: HttpUrl = HttpUrl(
             url=configuration.FRONTEND_URL.encoded_string()
-            + f"/token={token.access_token}"
+            + f"reset-password/{token.access_token}"
         )
 
         year: int = datetime.now().year
@@ -144,10 +144,16 @@ class AuthService:
         if not token_db or token_db.expired_at < datetime.now(timezone.utc):
             raise InvalidToken()
 
-        hashed_password: str = self.security_service.hash_password(new_password)
+        hashed_password: str = self.security_service.hash_password(
+            password=new_password
+        )
 
         token_db.user.password = hashed_password
 
         await self.repository.update_user(user=token_db.user)
 
         token_db.is_active = False
+
+        await self.password_reset_token_repository.update_password_reset_token(
+            password_reset_token=token_db
+        )
